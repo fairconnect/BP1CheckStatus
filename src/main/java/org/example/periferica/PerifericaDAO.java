@@ -14,7 +14,7 @@ public class PerifericaDAO {
 
         String query = "SELECT * FROM statoperiferiche WHERE idContratto = ?";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setInt(1, idContratto);
@@ -37,7 +37,7 @@ public class PerifericaDAO {
 
         String query = "SELECT * FROM statoperiferiche s JOIN statoperiferiche_ext se ON s.idStatoPeriferica = se.idStatoPeriferica WHERE idContratto = ?";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setInt(1, idContratto);
@@ -60,7 +60,7 @@ public class PerifericaDAO {
 
         String query = "SELECT * FROM statoperiferiche WHERE idPeriferica = ?";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setInt(1, idPeriferica);
@@ -83,7 +83,7 @@ public class PerifericaDAO {
 
         String query = "SELECT * FROM statoperiferiche s JOIN statoperiferiche_ext se ON s.idStatoPeriferica = se.idStatoPeriferica WHERE idPeriferica = ?";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setInt(1, idPeriferica);
@@ -183,7 +183,7 @@ public class PerifericaDAO {
                 int rowsInserted = preparedStatement.executeUpdate();
 
             if (rowsInserted > 0) {
-                System.out.println("insertPerifericaLog Log inserito correttamente per la periferica con ID: " + periferica.getIdPeriferica());
+                //System.out.println("insertPerifericaLog Log inserito correttamente per la periferica con ID: " + periferica.getIdPeriferica());
             }
         } catch (SQLException e) {
             System.err.println("insertPerifericaLog Errore durante l'inserimento del log per la periferica: " + e.getMessage());
@@ -201,7 +201,7 @@ public class PerifericaDAO {
     }
 
     private void attivaPeriferica(int idStatoPeriferica) {
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica()) {
+        try (Connection connection = DBManager.getConnectionReplica()) {
             connection.setAutoCommit(false);
 
             LocalDate dataOggi = LocalDate.now();
@@ -217,7 +217,7 @@ public class PerifericaDAO {
             connection.commit();
         } catch (SQLException e) {
             System.err.println("attivaPeriferica Errore durante l'aggiornamento: " + e.getMessage());
-            try (Connection connection = DBManager.getConnectionPaysatDBNewReplica()) {
+            try (Connection connection = DBManager.getConnectionReplica()) {
                 connection.rollback();
             } catch (SQLException rollbackEx) {
                 System.err.println("attivaPeriferica Errore durante il rollback: " + rollbackEx.getMessage());
@@ -226,7 +226,7 @@ public class PerifericaDAO {
     }
 
     private void disattivaPeriferica(int idStatoPeriferica) {
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica()) {
+        try (Connection connection = DBManager.getConnectionReplica()) {
             connection.setAutoCommit(false);
 
             LocalDate dataOggi = LocalDate.now();
@@ -249,7 +249,7 @@ public class PerifericaDAO {
         } catch (SQLException e) {
             System.err.println("disattivaPeriferica Errore durante l'aggiornamento: " + e.getMessage());
             // In caso di errore, annulla tutte le operazioni
-            try (Connection connection = DBManager.getConnectionPaysatDBNewReplica()) {
+            try (Connection connection = DBManager.getConnectionReplica()) {
                 connection.rollback();
             } catch (SQLException rollbackEx) {
                 System.err.println("disattivaPeriferica Errore durante il rollback: " + rollbackEx.getMessage());

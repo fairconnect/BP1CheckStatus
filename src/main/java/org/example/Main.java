@@ -8,19 +8,30 @@ import java.util.List;
 public class Main {
 
     public static void main(String[] args) {
+        //True ricerca per idContratto, False ricerca per idPeriferica
+        boolean findByIdContratto = false;
 
         try {
-            int idContratto = Integer.parseInt(args[0]);
-
             CheckService checkService = new CheckService();
+            List<Integer> lista = new ArrayList<>();
 
-            List<Integer> lista = leggiIdContrattiDaFile("C:/Users/kevin.pena/IdeaProjects/BP1CheckStatus/src/main/resources/idContratto.txt");
-
-            for (int numero : lista) {
-                System.out.println("main : Richiamo del metodo step1 con idContratto: " + numero);
-                checkService.step1(numero, EnumTypes.EnumComagnia.JENIOT);
+            if (findByIdContratto) {
+                lista = leggiIdContrattiDaFile("C:/Users/kevin.pena/IdeaProjects/BP1CheckStatus/src/main/resources/idContratto.txt");
+            } else {
+                lista= leggiIdContrattiDaFile("C:/Users/kevin.pena/IdeaProjects/BP1CheckStatus/src/main/resources/idPeriferica.txt");
             }
 
+            for (int numero : lista) {
+                if (!findByIdContratto) {
+                    System.out.println("main : Richiamo del metodo getIdContratto con idPerifica: " + numero);
+                    int idCtr = checkService.getIdContratto(numero);
+                    System.out.println("main : Richiamo del metodo step1 con idContratto: " + idCtr + " (idPeriferica: " + numero + ")");
+                    checkService.step1(idCtr, EnumTypes.EnumComagnia.JENIOT);
+                } else {
+                    System.out.println("main : Richiamo del metodo step1 con idContratto: " + numero);
+                    checkService.step1(numero, EnumTypes.EnumComagnia.JENIOT);
+                }
+            }
         } catch (NumberFormatException e) {
             System.err.println("main : Errore: l'idContratto");
         }

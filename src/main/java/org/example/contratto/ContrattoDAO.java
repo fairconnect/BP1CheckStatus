@@ -1,6 +1,8 @@
 package org.example.contratto;
 import org.example.DBManager;
+import org.example.Intervento;
 
+import java.io.*;
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -15,7 +17,7 @@ public class ContrattoDAO {
 
         String query = "select codCompagnia from tracciati where numVoucher = ?";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setInt(1, idContratto);
@@ -43,7 +45,7 @@ public class ContrattoDAO {
         String query = "SELECT t.idTracciato, t.numVoucher, t.codStato, t.codCompagnia, t.numPolizza, t.targa, t.vat, " +
                 "t.dataDecorrenza, t.dataInizioServ, t.dataFineServ, cd.dataInizio, cd.dataFine FROM contratti_dealer cd JOIN tracciati t ON t.numVoucher = cd.idContratto WHERE numVoucher = ?";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setInt(1, idContratto);
@@ -67,7 +69,7 @@ public class ContrattoDAO {
 
         String query = "select t.numVoucher as t_idContratto, tg.idUnicoMovimento, t.codStato, t.idTracciato, t.numPolizza, t.numPolSostituita, tg.numVoucher as tg_numVoucher, t.codCompagnia, tg.tipoMovimento, t.dataDecorrenza, t.dataArrivo, t.dataInizioServ, t.dataFineServ, t.vat, t.targa, tg.nomeFileMovim from  tracciati t left join tracciatigenerali tg on t.idTracciato = tg.idTracciato where t.numVoucher = ? order by t.dataArrivo desc";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setInt(1, idContratto);
@@ -91,7 +93,7 @@ public class ContrattoDAO {
 
         String query = "select * from scartitracciatigenerali s left join tracciatigenerali tg on tg.idUnicoMovimento = s.idUnicoMovimento where s.targa = ? and tg.idUnicoMovimento is null";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setString(1, targa);
@@ -137,14 +139,14 @@ public class ContrattoDAO {
             int interventi = 0;
             String query = "";
             if (tipoIntervento.equals("installazioni")) {
-                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state != 'COMPLETED' and top.tipoOperazione in (1, 3, 9,14,19, 20)";
+                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state not in (3,4,7,12) and top.tipoOperazione in (1, 3, 9,14,19, 20)";
             } else if (tipoIntervento.equals("disinstallazioni")) {
-                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state != 'COMPLETED' and top.tipoOperazione in (2,4,12,15,21)";
+                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state not in (3,4,7,12) and top.tipoOperazione in (2,4,12,15,21)";
             } else {
-                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state != 'COMPLETED' and top.tipoOperazione in (5,6,7,8,10,11,13,16,17,18)";
+                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state not in (3,4,7,12) and top.tipoOperazione in (5,6,7,8,10,11,13,16,17,18)";
             }
 
-            try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+            try (Connection connection = DBManager.getConnectionReplica();
                  PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
                 preparedStatement.setInt(1, idContratto);
@@ -159,6 +161,30 @@ public class ContrattoDAO {
                 e.printStackTrace();
             }
         return interventi;
+    }
+
+    public Intervento findUltimoIntervento(int idContratto) {
+        Intervento intervento = null;
+
+        String query = "select top.descrizione, so.data from operations o join stato_operations so on so.idoperation =o.idOperation and so.lastRecord  =1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.idtipoStatoOperation in (3,4,7,12)";
+
+        try (Connection connection = DBManager.getConnectionReplica();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, idContratto);
+
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    String descrizione = resultSet.getString("descrizione");
+                    LocalDate data = resultSet.getDate("data").toLocalDate();
+                    intervento = new Intervento(descrizione, data);
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("findUltimoIntervento Errore durante l'esecuzione della query: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return intervento;
     }
 
     private Mov mapToMov(ResultSet resultSet) throws SQLException {
@@ -236,7 +262,7 @@ public class ContrattoDAO {
 
         String query = "SELECT voucherGenerali FROM contratti_generali WHERE idContratto = ?";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setInt(1, idContratto);
@@ -258,7 +284,7 @@ public class ContrattoDAO {
 
         String query = "SELECT dataInizioServ, dataFineServ FROM contratti_dealer WHERE idContratto = ?";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setInt(1, idContratto);
@@ -277,8 +303,8 @@ public class ContrattoDAO {
     }
 
     public void insertContrattoLog(StatoContratto contratto) {
-        String query = "INSERT INTO bp1_statoContrattiLog (idTracciato,numVoucher, idContratto, tipoMovimento, codCompagnia, numPolizza, targa, vat, dataDecorrenza, dataInizioServizio, dataFineServizio, statoContratto, crossCompagnia, contrattiStato, statoPolizzeStato, invioI, interventiInstallazioneInCorso, interventiDisinstallazioneInCorso, interventiManutenzioneSostituzioneInCorso)" +
-                " VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)";
+        String query = "INSERT INTO bp1_statoContrattiLog (idTracciato,numVoucher, idContratto, tipoMovimento, codCompagnia, numPolizza, targa, vat, dataDecorrenza, dataInizioServizio, dataFineServizio, statoContratto, crossCompagnia, contrattiStato, statoPolizzeStato, invioI, interventiInstallazioneInCorso, interventiDisinstallazioneInCorso, interventiManutenzioneSostituzioneInCorso, ultimoIntervento, dataUltimoIntervento)" +
+                " VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?,?)";
 
         try (Connection connection = DBManager.getConnectionPaysatDBNewCert();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -302,11 +328,13 @@ public class ContrattoDAO {
             preparedStatement.setInt(17, contratto.getInterventiInstallazioneInCorso());
             preparedStatement.setInt(18, contratto.getInterventiDisinstallazioneInCorso());
             preparedStatement.setInt(19, contratto.getInterventiManutenzioneSostituzioneInCorso());
+            preparedStatement.setString(20, contratto.getUltimoInterventoEseguito());
+            preparedStatement.setDate(21, contratto.getDataUltimoIntervento() != null ? Date.valueOf(contratto.getDataUltimoIntervento()) : null);
 
             int rowsInserted = preparedStatement.executeUpdate();
 
             if (rowsInserted > 0) {
-                System.out.println("insertContrattoLog Log inserito correttamente per il contratto con ID: " + contratto.getIdContratto());
+                //System.out.println("insertContrattoLog Log inserito correttamente per il contratto con ID: " + contratto.getIdContratto());
             }
         } catch (SQLException e) {
             System.err.println("insertContrattoLog Errore durante l'inserimento del log per il contratto: " + e.getMessage());
@@ -339,6 +367,58 @@ public class ContrattoDAO {
         }
     }
 
+    public void insertContrattoLogCSV(StatoContratto contratto) {
+        String csvFile = "contratti_log.csv";
+        File file = new File(csvFile);
+        boolean fileExists = file.exists();
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(csvFile, true))) {
+            // Se il file non esiste, scrive le intestazioni
+            if (!fileExists) {
+                writer.write("idTracciato,numVoucher,idContratto,tipoMovimento,codCompagnia,numPolizza,targa,vat,dataDecorrenza,dataInizioServizio,dataFineServizio,statoContratto,crossCompagnia,contrattiStato,statoPolizzeStato,invioI,interventiInstallazioneInCorso,interventiDisinstallazioneInCorso,interventiManutenzioneSostituzioneInCorso,ultimoIntervento,dataUltimoIntervento");
+                writer.newLine();
+            }
+            // Costruisce la riga CSV
+            StringBuilder sb = new StringBuilder();
+            sb.append(contratto.getIdTracciato()).append(";");
+            sb.append(contratto.getNumVoucher()).append(";");
+            sb.append(contratto.getIdContratto()).append(";");
+            sb.append(escapeCsv(contratto.getTipoMovimento())).append(";");
+            sb.append(escapeCsv(contratto.getCodCompagnia())).append(";");
+            sb.append(escapeCsv(contratto.getNumPolizza())).append(";");
+            sb.append(escapeCsv(contratto.getTarga())).append(";");
+            sb.append(escapeCsv(contratto.getVat())).append(";");
+            sb.append(contratto.getDataDecorrenza() != null ? contratto.getDataDecorrenza().toString() : "").append(";");
+            sb.append(contratto.getDataInizioServizio() != null ? contratto.getDataInizioServizio().toString() : "").append(";");
+            sb.append(contratto.getDataFineServizio() != null ? contratto.getDataFineServizio().toString() : "").append(";");
+            sb.append(escapeCsv(String.valueOf(contratto.getStatoContratto()))).append(";");
+            sb.append(contratto.getCrossCompagnia()).append(";");
+            sb.append(contratto.getContrattiStato()).append(";");
+            sb.append(contratto.getStatoPolizzeStato()).append(";");
+            sb.append(contratto.getInvioI()).append(";");
+            sb.append(contratto.getInterventiInstallazioneInCorso()).append(";");
+            sb.append(contratto.getInterventiDisinstallazioneInCorso()).append(";");
+            sb.append(contratto.getInterventiManutenzioneSostituzioneInCorso()).append(";");
+            sb.append(escapeCsv(contratto.getUltimoInterventoEseguito())).append(";");
+            sb.append(contratto.getDataUltimoIntervento() != null ? contratto.getDataUltimoIntervento().toString() : "");
+
+            writer.write(sb.toString());
+            writer.newLine();
+            writer.flush();
+            System.out.println("Dati inseriti correttamente su contratti_log.");
+        } catch (IOException e) {
+            System.err.println("Errore durante la scrittura su contratti_log: " + e.getMessage());
+        }
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) return "";
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            value = value.replace("\"", "\"\"");
+            return "\"" + value + "\"";
+        }
+        return value;
+    }
+
     public StatoContratto findContrattoLog(int idContratto) {
         StatoContratto trovato = null;
         String query = "SELECT idContratto FROM bp1_statoContrattiLog WHERE idContratto = ?";
@@ -365,7 +445,7 @@ public class ContrattoDAO {
 
         String query = "select count(*) as inviato from infogenimp i where statoImpianto = 'I' and targa = ?;";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setString(1, targa);
@@ -388,7 +468,7 @@ public class ContrattoDAO {
 
         String query = "SELECT stato FROM contratti WHERE idContratto = ?";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setInt(1, idContratto);
@@ -408,7 +488,7 @@ public class ContrattoDAO {
     public void updateStatoContrattoById(int idContratto, int nuovoStato) {
         String query = "UPDATE contratti SET stato = ? WHERE idContratto = ?";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement updateStatement = connection.prepareStatement(query)) {
 
             updateStatement.setInt(1, nuovoStato);
@@ -430,7 +510,7 @@ public class ContrattoDAO {
 
         String query = "SELECT stato_polizza FROM stato_polizze WHERE idContratto = ?";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setInt(1, idContratto);
@@ -450,7 +530,7 @@ public class ContrattoDAO {
     public void updateStatoPolizzeByIdContratto(int idContratto, int nuovoStato) {
         String query = "UPDATE stato_polizze SET stato_polizza = ? WHERE idContratto = ?";
 
-        try (Connection connection = DBManager.getConnectionPaysatDBNewReplica();
+        try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement updateStatement = connection.prepareStatement(query)) {
 
             updateStatement.setInt(1, nuovoStato);

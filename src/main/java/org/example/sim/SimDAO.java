@@ -67,7 +67,7 @@ public class SimDAO {
             int rowsInserted = preparedStatement.executeUpdate();
 
             if (rowsInserted > 0) {
-                System.out.println("insertSimLog Log inserito correttamente per la sim con iccid: " + sim.getIccid());
+                //System.out.println("insertSimLog Log inserito correttamente per la sim con iccid: " + sim.getIccid());
             }
         } catch (SQLException e) {
             System.err.println("insertSimLog Errore durante l'inserimento del log per la sim: " + e.getMessage());

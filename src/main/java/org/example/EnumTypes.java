@@ -66,6 +66,4 @@ public final class EnumTypes {
         SOSPESA,
         AMBIGUO
     }
-
-
 }
