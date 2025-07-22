@@ -2,25 +2,22 @@ package org.example;
 
 public final class EnumTypes {
 
-    // Costruttore privato per evitare l'istanza della classe
-    private EnumTypes() {
-        throw new UnsupportedOperationException("Utility class");
+    public enum EnumStatoContratto {
+        ATTIVO,
+        SCADUTO,
+        AMBIGUO,
+        SOSPESO,
+        STORNATO,
     }
 
-    public enum EnumStatoContratto {
-        ATTIVO,   // Contratto attivo
-        SCADUTO,
-        TERMINATO,// Contratto scaduto
-        NESSUNRECORD,
-        AMBIGUO,
-        ULTIMADATASCADUTA,
+    public enum EnumContratto {
+        IDULTIMOMOVERRATO,
+        DASTORNARE,
         CROSSCOMPAGNIA,
         SCARTIDARECUPERARE,
-        SOSPESO,
-        DASTORNARE,
-        STORNATO,
-        IDULTIMOMOVERRATO,
-        ERRORSQL// Situazione non gestita
+        NESSUNCONTRATTO,
+        COMPAGNIANONGESTITA
+
     }
 
     public enum EnumStatoPeriferica {
@@ -28,24 +25,17 @@ public final class EnumTypes {
         ABBINATA,
         DISATTIVA,
         DISINSTALLATA,
-        NOLASTRECORD,
+        RIENTRATA,
+        INSOSTITUZIONE,
+        AMBIGUA,
+    }
+
+    public enum EnumPeriferica {
         PERIFERICASUDIVERSOCONTRATTO,
         NESSUNAPERIFERICA,
         SANAREEXT,
         DOPPIAA,
         NODATE,
-        NODATADIS,
-        AMBIGUA,
-        DADISATTIVARE,
-        STATONONVALIDO,
-        NESSUNADATA,
-        STATOANOULTIMORECORD,
-        ERRORSQL
-    }
-
-    public enum EnumComagnia {
-        MES,
-        JENIOT
     }
 
     public enum EnumTipoMovimento {

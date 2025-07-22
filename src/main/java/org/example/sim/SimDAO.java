@@ -73,4 +73,38 @@ public class SimDAO {
             System.err.println("insertSimLog Errore durante l'inserimento del log per la sim: " + e.getMessage());
         }
     }
+
+
+    public int findIdPerifericaByICCID(String iccid) {
+        int  idPeriferica = 0;
+
+        String query =
+                "SELECT p.idPeriferica as idPeriferica " +
+                        "FROM sim s " +
+                        "LEFT JOIN periferiche p ON p.idSim = s.idSim " +
+                        "LEFT JOIN statoperiferiche sp ON sp.idPeriferica = p.idPeriferica " +
+                        "    AND sp.dataInizio = ( " +
+                        "        SELECT MAX(sp2.dataInizio) " +
+                        "        FROM statoperiferiche sp2 " +
+                        "        WHERE sp2.idPeriferica = p.idPeriferica " +
+                        "    ) " +
+                        "WHERE s.iccid LIKE (?)";
+
+        try (Connection connection = DBManager.getConnectionReplica();
+             PreparedStatement ps = connection.prepareStatement(query)) {
+             ps.setString(1, iccid + "%");
+             ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                idPeriferica = rs.getInt("idPeriferica");
+            }
+
+
+        } catch (SQLException e) {
+            System.err.println("insertSimLog Errore " + e.getMessage());
+        }
+        return idPeriferica;
+    }
+
+
 }

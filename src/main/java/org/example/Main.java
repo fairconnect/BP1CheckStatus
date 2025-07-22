@@ -8,36 +8,55 @@ import java.util.List;
 public class Main {
 
     public static void main(String[] args) {
-        //True ricerca per idContratto, False ricerca per idPeriferica
+        ///Settare parametri per effettuare la ricerca
         boolean findByIdContratto = false;
+        boolean findByIdPeriferica = false;
+        boolean findByIccid = true;
 
         try {
             CheckService checkService = new CheckService();
             List<Integer> lista = new ArrayList<>();
+            List<String> listaString = new ArrayList<>();
 
             if (findByIdContratto) {
-                lista = leggiIdContrattiDaFile("C:/Users/kevin.pena/IdeaProjects/BP1CheckStatus/src/main/resources/idContratto.txt");
-            } else {
-                lista= leggiIdContrattiDaFile("C:/Users/kevin.pena/IdeaProjects/BP1CheckStatus/src/main/resources/idPeriferica.txt");
+                lista = leggiIntDaFile("C:/Users/kevin.pena/IdeaProjects/BP1CheckStatus/src/main/resources/idContratto.txt");
+            } else if (findByIdPeriferica) {
+                lista = leggiIntDaFile("C:/Users/kevin.pena/IdeaProjects/BP1CheckStatus/src/main/resources/idPeriferica.txt");
+            } else if (findByIccid) {
+                listaString= leggiStringheDaFile("C:/Users/kevin.pena/IdeaProjects/BP1CheckStatus/src/main/resources/ICCID.txt");
             }
 
-            for (int numero : lista) {
-                if (!findByIdContratto) {
-                    System.out.println("main : Richiamo del metodo getIdContratto con idPerifica: " + numero);
-                    int idCtr = checkService.getIdContratto(numero);
-                    System.out.println("main : Richiamo del metodo step1 con idContratto: " + idCtr + " (idPeriferica: " + numero + ")");
-                    checkService.step1(idCtr, EnumTypes.EnumComagnia.JENIOT);
-                } else {
-                    System.out.println("main : Richiamo del metodo step1 con idContratto: " + numero);
-                    checkService.step1(numero, EnumTypes.EnumComagnia.JENIOT);
+            if (findByIccid) {
+                for (String iccid : listaString) {
+                    System.out.println("main : Richiamo del metodo getIdContratto con iccid: " + iccid);
+                    int idperi = checkService.getIdPerifericaBySim(iccid);
+                    System.out.println("main : Richiamo del metodo getIdContratto con idPerifica: " + idperi);
+                    int idCtr = checkService.getIdContratto(idperi);
+                    System.out.println("main : Richiamo del metodo step1 con idContratto: " + idCtr + " (idPerifica: " + idperi + ")");
+                    checkService.step1(idCtr, iccid);
                 }
             }
+
+            if (findByIdContratto || findByIdPeriferica) {
+                for (int id : lista) {
+                    if (findByIdPeriferica) {
+                        System.out.println("main : Richiamo del metodo getIdContratto con idPerifica: " + id);
+                        int idCtr = checkService.getIdContratto(id);
+                        System.out.println("main : Richiamo del metodo step1 con idContratto: " + idCtr + " (idPerifica: " + id + ")");
+                        checkService.step1(idCtr, String.valueOf(id));
+                    } else if (findByIdContratto) {
+                        System.out.println("main : Richiamo del metodo step1 con idContratto: " + id);
+                        checkService.step1(id, String.valueOf(id));
+                    }
+                }
+            }
+
         } catch (NumberFormatException e) {
             System.err.println("main : Errore: l'idContratto");
         }
     }
 
-    public static List<Integer> leggiIdContrattiDaFile(String percorsoFile) {
+    public static List<Integer> leggiIntDaFile(String percorsoFile) {
         List<Integer> lista = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new FileReader(percorsoFile))) {
             String linea;
@@ -60,44 +79,20 @@ public class Main {
         return lista;
     }
 
-    /*public static void readCsvAndInsertData(String csvFilePath, ContrattoDAO contrattoDAO) {
-        BufferedReader br = null;
-
-        try {
-            // Aprire il file CSV
-            br = new BufferedReader(new FileReader(csvFilePath));
-            String line;
-
-            // Leggere la prima riga (intestazione) e saltarla, se presente
-            line = br.readLine();
-
-            // Leggere ogni riga successiva
-            while ((line = br.readLine()) != null) {
-                // Separare i valori in base al separatore "," del CSV
-                String[] values = line.split(",");
-
-                // Assumiamo che il CSV abbia due colonne: nome e cognome
-                if (values.length >= 2) {
-                    String nome = values[0].trim();  // Primo valore: nome
-                    String cognome = values[1].trim();  // Secondo valore: cognome
-
-                    // Utilizzare il  per inserire i dati nel database
-                    //contrattoDAO.insertData(nome, cognome);
-                } else {
-                    System.err.println("Formato CSV non valido nella riga: " + line);
+    public static List<String> leggiStringheDaFile(String percorsoFile) {
+        List<String> lista = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(percorsoFile))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                linea = linea.trim();
+                if (!linea.isEmpty()) {
+                    lista.add(linea);
                 }
             }
         } catch (IOException e) {
-            System.err.println("Errore nella lettura del file CSV: " + e.getMessage());
-        } finally {
-            // Chiude il BufferedReader in tutti i casi
-            try {
-                if (br != null) {
-                    br.close();
-                }
-            } catch (IOException e) {
-                System.err.println("Errore durante la chiusura del file: " + e.getMessage());
-            }
+            System.err.println("Errore nella lettura del file: " + e.getMessage());
+            e.printStackTrace();
         }
-    }*/
+        return lista;
+    }
 }

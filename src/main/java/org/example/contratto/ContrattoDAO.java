@@ -1,6 +1,5 @@
 package org.example.contratto;
 import org.example.DBManager;
-import org.example.Intervento;
 
 import java.io.*;
 import java.sql.*;
@@ -43,7 +42,7 @@ public class ContrattoDAO {
         //String query = "SELECT idTracciato, numVoucher, codStato, codCompagnia, numPolizza, targa, vat, dataDecorrenza, dataInizioServ, dataFineServ FROM tracciati WHERE numVoucher = ?";
 
         String query = "SELECT t.idTracciato, t.numVoucher, t.codStato, t.codCompagnia, t.numPolizza, t.targa, t.vat, " +
-                "t.dataDecorrenza, t.dataInizioServ, t.dataFineServ, cd.dataInizio, cd.dataFine FROM contratti_dealer cd JOIN tracciati t ON t.numVoucher = cd.idContratto WHERE numVoucher = ?";
+                "t.dataDecorrenza, t.dataInizioServ, t.dataFineServ, cd.dataInizio, cd.dataFine FROM contratti_dealer cd JOIN tracciati t ON t.numVoucher = cd.idContratto WHERE numVoucher = ? order by t.dataArrivo desc";
 
         try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -139,11 +138,11 @@ public class ContrattoDAO {
             int interventi = 0;
             String query = "";
             if (tipoIntervento.equals("installazioni")) {
-                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state not in (3,4,7,12) and top.tipoOperazione in (1, 3, 9,14,19, 20)";
+                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state not in (3,4,6,7,12) and top.tipoOperazione in (1, 3, 9,14,19, 20)";
             } else if (tipoIntervento.equals("disinstallazioni")) {
-                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state not in (3,4,7,12) and top.tipoOperazione in (2,4,12,15,21)";
+                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state not in (3,4,6,7,12) and top.tipoOperazione in (2,4,12,15,21)";
             } else {
-                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state not in (3,4,7,12) and top.tipoOperazione in (5,6,7,8,10,11,13,16,17,18)";
+                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state not in (3,4,6,7,12) and top.tipoOperazione in (5,6,7,8,10,11,13,16,17,18)";
             }
 
             try (Connection connection = DBManager.getConnectionReplica();
@@ -166,7 +165,7 @@ public class ContrattoDAO {
     public Intervento findUltimoIntervento(int idContratto) {
         Intervento intervento = null;
 
-        String query = "select top.descrizione, so.data from operations o join stato_operations so on so.idoperation =o.idOperation and so.lastRecord  =1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.idtipoStatoOperation in (3,4,7,12)";
+        String query = "select top.descrizione, so.data from operations o join stato_operations so on so.idoperation =o.idOperation and so.lastRecord  =1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.idtipoStatoOperation in (3,4)";
 
         try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -187,12 +186,76 @@ public class ContrattoDAO {
         return intervento;
     }
 
-    private Mov mapToMov(ResultSet resultSet) throws SQLException {
+    public List<Mov> findMovQuixaIdContratto(int idContratto) {
+        List<Mov> movList = new ArrayList<>();
+        String query = "SELECT t.idTracciato, t.numVoucher, tq.codiceMovimento,t.codStato, t.codCompagnia, t.numPolizza, t.targa, t.vat, t.dataDecorrenza, t.dataInizioServ, t.dataFineServ from tracciati_quixa tq join tracciati t on t.idTracciato = tq.idTracciato WHERE t.numVoucher = ? order by t.dataArrivo desc";
+
+        try (Connection connection = DBManager.getConnectionReplica();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, idContratto);
+
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    Mov movNew = mapToMovQuixa(resultSet);
+                    movList.add(movNew);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("findMovQuixaIdContratto Errore durante l'esecuzione della query: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return movList;
+    }
+
+    private Mov mapToMovQuixa(ResultSet resultSet) throws SQLException {
         int idTracciato = resultSet.getInt("idTracciato");
         int idContratto = resultSet.getInt("numVoucher");
-        long idUnicoMov = resultSet.getInt("idUnicoMovimento");
+        String codiceMovimento = resultSet.getString("codiceMovimento");
         String codStato = resultSet.getString("codStato");
         String codCompagnia = resultSet.getString("codCompagnia");
+        String numPolizza = resultSet.getString("numPolizza");
+        String targa = resultSet.getString("targa");
+        String vat = resultSet.getString("vat");
+
+        LocalDate dataDecorrenza = null;
+        Date dbDate = resultSet.getDate("dataDecorrenza");
+        if (dbDate != null) {
+            dataDecorrenza = dbDate.toLocalDate();
+        }
+
+        LocalDate dataInizioServizio = null;
+        dbDate = resultSet.getDate("dataInizioServ");
+        if (dbDate != null) {
+            dataInizioServizio = dbDate.toLocalDate();
+        }
+
+        LocalDate dataFineServizio = null;
+        dbDate = resultSet.getDate("dataFineServ");
+        if (dbDate != null) {
+            dataFineServizio = dbDate.toLocalDate();
+        }
+        return new Mov(
+                0, idTracciato, idContratto, 0, codStato, codiceMovimento, codCompagnia, numPolizza,"", targa,  vat, dataDecorrenza, dataInizioServizio, dataFineServizio,null,"");
+    }
+
+    private Mov mapToMov(ResultSet resultSet) throws SQLException {
+        String codCompagnia = resultSet.getString("codCompagnia");
+        int idTracciato = resultSet.getInt("idTracciato");
+        int idContratto = resultSet.getInt("numVoucher");
+        long idUnicoMov = 0;
+        String codiceMovimento ="";
+        if (codCompagnia.equalsIgnoreCase("MES") || codCompagnia.equalsIgnoreCase("CDS")) {
+            idUnicoMov = resultSet.getInt("idUnicoMovimento");
+        } else {
+            codiceMovimento= resultSet.getString("codiceMovimento");
+        }
+        String codStato = "";
+        if (codCompagnia.equalsIgnoreCase("MES") || codCompagnia.equalsIgnoreCase("CDS")) {
+            codStato = resultSet.getString("codStato");
+        } else {
+            codStato = resultSet.getString("codiceMovimento");
+        }
         String numPolizza = resultSet.getString("numPolizza");
         String targa = resultSet.getString("targa");
         String vat = resultSet.getString("vat");
@@ -217,8 +280,7 @@ public class ContrattoDAO {
         dbDate = resultSet.getDate("dataFine");
         if (dbDate != null) { dataFineContratto = dbDate.toLocalDate(); }
 
-        return new Mov(0,idTracciato, idContratto,idUnicoMov, codStato, "",codCompagnia, numPolizza,"", targa, vat,null,
-                dataDecorrenza, dataInizioContratto, dataFineContratto, "");
+        return new Mov(0,idTracciato, idContratto,idUnicoMov, codStato, "",codCompagnia, numPolizza,"", targa, vat, dataDecorrenza, dataInizioContratto, dataFineContratto,null,"");
     }
 
     private Mov mapToMovGen(ResultSet resultSet) throws SQLException {
@@ -321,7 +383,7 @@ public class ContrattoDAO {
             preparedStatement.setDate(10, contratto.getDataInizioServizio() != null ? Date.valueOf(contratto.getDataInizioServizio()) : null);
             preparedStatement.setDate(11, contratto.getDataFineServizio() != null ? Date.valueOf(contratto.getDataFineServizio()) : null);
             preparedStatement.setString(12, String.valueOf(contratto.getStatoContratto()));
-            preparedStatement.setBoolean(13, contratto.getCrossCompagnia());
+            preparedStatement.setBoolean(13, false);
             preparedStatement.setInt(14, contratto.getContrattiStato());
             preparedStatement.setInt(15, contratto.getStatoPolizzeStato());
             preparedStatement.setInt(16, contratto.getInvioI());
@@ -391,7 +453,7 @@ public class ContrattoDAO {
             sb.append(contratto.getDataInizioServizio() != null ? contratto.getDataInizioServizio().toString() : "").append(";");
             sb.append(contratto.getDataFineServizio() != null ? contratto.getDataFineServizio().toString() : "").append(";");
             sb.append(escapeCsv(String.valueOf(contratto.getStatoContratto()))).append(";");
-            sb.append(contratto.getCrossCompagnia()).append(";");
+            //sb.append(contratto.getCrossCompagnia()).append(";");
             sb.append(contratto.getContrattiStato()).append(";");
             sb.append(contratto.getStatoPolizzeStato()).append(";");
             sb.append(contratto.getInvioI()).append(";");
@@ -440,15 +502,16 @@ public class ContrattoDAO {
         return trovato;
     }
 
-    public int findInvioIByTarga(String targa) {
+    public int findInvioIByTargaVoucher(String targa, int numVoucher) {
         int invioI = -1;
 
-        String query = "select count(*) as inviato from infogenimp i where statoImpianto = 'I' and targa = ?;";
+        String query = "select count(*) as inviato from infogenimp i where statoImpianto = 'I' and targa = ? and numeroVoucher = ?;";
 
         try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setString(1, targa);
+            preparedStatement.setInt(2, numVoucher);
 
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 if (resultSet.next()) {
@@ -460,6 +523,53 @@ public class ContrattoDAO {
             e.printStackTrace();
         }
         return invioI;
+    }
+
+    public TrasmissioneDati verificaRaw(int numVoucher) {
+        TrasmissioneDati trasmissioneDati = null;
+        String query = "SELECT " +
+                "ter.isDataRawActive, " +
+                "r.active, " +
+                "CASE WHEN ter.isDataRawActive = r.active THEN 'UGUALI' ELSE 'DIVERSI' END AS diff_isDataRawActive_active, " +
+                "ter.record_state, " +
+                "r.stato_comunicazione, " +
+                "CASE WHEN ter.record_state = r.stato_comunicazione THEN 'UGUALI' ELSE 'DIVERSI' END AS diff_recordState_statoCom, " +
+                "CASE " +
+                "  WHEN ter.isDataRawActive = r.active AND ter.record_state = r.stato_comunicazione THEN 'UGUALI' " +
+                "  ELSE 'registri e rawdata disallineati' " +
+                "END AS stato_allineamento " +
+                "FROM tbl_enrich_registry ter " +
+                "JOIN raw_data_generali r ON ter.voucherId = r.numVoucher " +
+                "WHERE ter.voucherId = ?";
+
+        try (Connection conn = DBManager.getConnectionReplica();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setInt(1, numVoucher);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int isDataRawActive = rs.getInt("isDataRawActive");
+                    int active = rs.getInt("active");
+                    String diffIsDataRawActiveActive = rs.getString("diff_isDataRawActive_active");
+                    int recordState = rs.getInt("record_state");
+                    int statoComunicazione = rs.getInt("stato_comunicazione");
+                    String diffRecordStateStatoCom = rs.getString("diff_recordState_statoCom");
+                    String statoAllineamento = rs.getString("stato_allineamento");
+
+                    trasmissioneDati = new TrasmissioneDati(
+                            isDataRawActive,
+                            active,
+                            diffIsDataRawActiveActive,
+                            recordState,
+                            statoComunicazione,
+                            diffRecordStateStatoCom,
+                            statoAllineamento
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return trasmissioneDati;
     }
 
     ///Tabella CONTRATTI

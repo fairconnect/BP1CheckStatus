@@ -1,12 +1,13 @@
 package org.example.periferica;
 
-import org.example.EnumTypes.EnumStatoPeriferica;
+import org.example.EnumTypes.*;
 
 public class StatoPeriferica extends Periferica {
 
     private EnumStatoPeriferica statoPeriferica;
+    private EnumPeriferica anomaliPeriferica;
 
-    public StatoPeriferica(Periferica periferica, EnumStatoPeriferica statoPeriferica) {
+    public StatoPeriferica(Periferica periferica, EnumStatoPeriferica statoPeriferica, EnumPeriferica anomaliPeriferica) {
         super(  periferica.getIdContratto(),
                 periferica.getIdPeriferica(),
                 periferica.getIdStatoPeriferica(),
@@ -22,6 +23,7 @@ public class StatoPeriferica extends Periferica {
                 periferica.getNote()
         );
         this.statoPeriferica = statoPeriferica;
+        this.anomaliPeriferica = anomaliPeriferica;
     }
 
 
@@ -33,5 +35,7 @@ public class StatoPeriferica extends Periferica {
         this.statoPeriferica = statoPeriferica;
     }
 
+    public EnumPeriferica getAnomaliPeriferica() { return anomaliPeriferica; }
 
+    public void setAnomaliPeriferica(EnumPeriferica anomaliPeriferica) { this.anomaliPeriferica = anomaliPeriferica; }
 }

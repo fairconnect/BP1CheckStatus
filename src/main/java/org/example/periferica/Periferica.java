@@ -6,12 +6,12 @@ public class Periferica {
     private int idContratto;
     private int idPeriferica;
     private int idStatoPeriferica;
+    private int ubicazione;
 
     private String stato;
     private String causale;
     private String note;
     private String causale_disattivazione;
-    private String ubicazione;
 
     private LocalDate dataInizio;
     private LocalDate dataPrimoCollaudo;
@@ -21,7 +21,7 @@ public class Periferica {
 
     // Costruttore con tutti i parametri
     public Periferica(int idContratto, int idPeriferica, int idStatoPeriferica, String stato,
-                      String causale, String causale_disattivazione, String ubicazione,
+                      String causale, String causale_disattivazione, int ubicazione,
                       LocalDate dataInizio, LocalDate dataPrimoCollaudo, LocalDate dataCollaudo,
                       LocalDate dataDisattivazione, LocalDate dataDisinstallazione,String note) {
         this.idContratto = idContratto;
@@ -89,11 +89,11 @@ public class Periferica {
         this.causale_disattivazione = causale_disattivazione;
     }
 
-    public String getUbicazione() {
+    public int getUbicazione() {
         return ubicazione;
     }
 
-    public void setUbicazione(String ubicazione) {
+    public void setUbicazione(int ubicazione) {
         this.ubicazione = ubicazione;
     }
 

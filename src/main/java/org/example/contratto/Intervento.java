@@ -1,4 +1,4 @@
-package org.example;
+package org.example.contratto;
 
 import java.time.LocalDate;
 

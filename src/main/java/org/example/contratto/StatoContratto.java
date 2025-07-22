@@ -1,12 +1,12 @@
 package org.example.contratto;
 
 import java.time.LocalDate;
-import static org.example.EnumTypes.EnumStatoContratto;
+import static org.example.EnumTypes.*;
 
 public class StatoContratto extends Mov {
 
-    private EnumStatoContratto statoContratto; // Attributo aggiuntivo
-    private boolean crossCompagnia;
+    private EnumStatoContratto statoContratto;
+    private EnumContratto anomaliaContratto;
     private int contrattiStato;
     private int statoPolizzeStato;
     private int invioI;
@@ -16,7 +16,7 @@ public class StatoContratto extends Mov {
     private String ultimoInterventoEseguito;
     private LocalDate dataUltimoIntervento;
 
-    public StatoContratto(Mov mov, EnumStatoContratto statoContratto, boolean crossCompagnia, int contrattiStato, int statoPolizzeStato, int invioI, int interventiInstallazioneInCorso, int interventiDisinstallazioneInCorso, int interventiManutenzioneSostituzioneInCorso, String ultimoInterventoEseguito, LocalDate dataUltimoIntervento) {
+    public StatoContratto(Mov mov, EnumStatoContratto statoContratto, EnumContratto anomaliaContratto, int contrattiStato, int statoPolizzeStato, int invioI, int interventiInstallazioneInCorso, int interventiDisinstallazioneInCorso, int interventiManutenzioneSostituzioneInCorso, String ultimoInterventoEseguito, LocalDate dataUltimoIntervento) {
         super(mov.getNumVoucher(),
                 mov.getIdTracciato(),
                 mov.getIdContratto(),
@@ -34,7 +34,7 @@ public class StatoContratto extends Mov {
                 mov.getDataArrivo(),
                 mov.getNomeFileMovim());
         this.statoContratto = statoContratto;
-        this.crossCompagnia = crossCompagnia;
+        this.anomaliaContratto = anomaliaContratto;
         this.contrattiStato = contrattiStato;
         this.statoPolizzeStato = statoPolizzeStato;
         this.invioI = invioI;
@@ -48,8 +48,8 @@ public class StatoContratto extends Mov {
     // Getter
     public EnumStatoContratto getStatoContratto() { return statoContratto; }
 
-    public boolean getCrossCompagnia() {
-        return crossCompagnia;
+    public EnumContratto getAnomaliaContratto() {
+        return anomaliaContratto;
     }
 
     public int getContrattiStato() {
@@ -75,7 +75,7 @@ public class StatoContratto extends Mov {
     // Setter
     public void setStatoContratto(EnumStatoContratto statoContratto) { this.statoContratto = statoContratto; }
 
-    public void setCrossCompagnia(boolean crossCompagnia) { this.crossCompagnia = crossCompagnia; }
+    public void setAnomaliaContratto(EnumContratto anomaliaContratto) { this.anomaliaContratto = anomaliaContratto; }
 
     public void setContrattiStato(int contrattiStato) { this.contrattiStato = contrattiStato; }
 

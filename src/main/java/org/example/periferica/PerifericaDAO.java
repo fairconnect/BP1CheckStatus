@@ -122,19 +122,21 @@ public class PerifericaDAO {
         dbDate = resultSet.getDate("dataDisattivazione");
         if (dbDate != null) { dataDisattivazione = dbDate.toLocalDate(); }
 
-        return new Periferica(idContratto, idPeriferica, idStatoPeriferica, stato, causale, "", "", dataInizio, null, dataCollaudo, dataDisattivazione, null, note);
+
+
+        return new Periferica(idContratto, idPeriferica, idStatoPeriferica, stato, causale, "", 0, dataInizio, null, dataCollaudo, dataDisattivazione, null, note);
     }
 
     private Periferica mapToPerifericaExt(ResultSet resultSet) throws SQLException {
         int idContratto = resultSet.getInt("idContratto");
         int idPeriferica = resultSet.getInt("idPeriferica");
         int idStatoPeriferica = resultSet.getInt("idStatoPeriferica");
+        int ubicazione = resultSet.getInt("ubicazione");
 
         String stato = resultSet.getString("stato");
         String causale = resultSet.getString("causale");
         String note = resultSet.getString("note");
         String causale_disattivazione = resultSet.getString("causale_disattivazione");
-        String ubicazione = resultSet.getString("ubicazione");
 
         LocalDate dataInizio = null;
         Date dbDate = resultSet.getDate("dataInizio");
@@ -256,4 +258,27 @@ public class PerifericaDAO {
             }
         }
     }
+
+    public String trovaClienteDealerByUbicazione(String valore) {
+        String sql = "SELECT valore, trovato FROM ( " +
+                "SELECT idCliente AS valore, 'Dal Cliente' AS trovato FROM contratti WHERE idCliente = ? " +
+                "UNION ALL " +
+                "SELECT idUser AS valore, 'Dal Dealer' AS trovato FROM co_gl_anagrafica_mag WHERE idUser = ? " +
+                ") AS unione " +
+                "LIMIT 1";
+        try (Connection connection = DBManager.getConnectionReplica();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, valore);
+            ps.setString(2, valore);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("trovato");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return "Ubicazione non trovata";
+    }
+
 }
