@@ -8,10 +8,12 @@ import java.util.List;
 public class Main {
 
     public static void main(String[] args) {
+
+
         ///Settare parametri per effettuare la ricerca
         boolean findByIdContratto = false;
-        boolean findByIdPeriferica = false;
-        boolean findByIccid = true;
+        boolean findByIdPeriferica = true;
+        boolean findByIccid = false;
 
         try {
             CheckService checkService = new CheckService();
@@ -28,26 +30,35 @@ public class Main {
 
             if (findByIccid) {
                 for (String iccid : listaString) {
-                    System.out.println("main : Richiamo del metodo getIdContratto con iccid: " + iccid);
+                    long startTime = System.nanoTime();
+                    //System.out.println("main : Richiamo del metodo getIdContratto con iccid: " + iccid + "START" + startTime);
                     int idperi = checkService.getIdPerifericaBySim(iccid);
-                    System.out.println("main : Richiamo del metodo getIdContratto con idPerifica: " + idperi);
+                    //System.out.println("main : Richiamo del metodo getIdContratto con idPerifica: " + idperi + "START" + startTime);
                     int idCtr = checkService.getIdContratto(idperi);
                     System.out.println("main : Richiamo del metodo step1 con idContratto: " + idCtr + " (idPerifica: " + idperi + ")");
                     checkService.step1(idCtr, iccid);
+
+                    long endTime = System.nanoTime();
+                    long durataInMillisecondi = (endTime - startTime) / 1_000_000_000;
+                    System.out.println("Tempo di esecuzione: " + durataInMillisecondi + " ms");
                 }
             }
 
             if (findByIdContratto || findByIdPeriferica) {
                 for (int id : lista) {
+                    long startTime = System.nanoTime();
                     if (findByIdPeriferica) {
-                        System.out.println("main : Richiamo del metodo getIdContratto con idPerifica: " + id);
+                        //System.out.println("main : Richiamo del metodo getIdContratto con idPerifica: " + id + "START" + startTime);
                         int idCtr = checkService.getIdContratto(id);
-                        System.out.println("main : Richiamo del metodo step1 con idContratto: " + idCtr + " (idPerifica: " + id + ")");
+                        System.out.println("main : Richiamo del metodo step1 con idContratto: " + idCtr + " (idPerifica: " + id + ")" + "START ");
                         checkService.step1(idCtr, String.valueOf(id));
                     } else if (findByIdContratto) {
-                        System.out.println("main : Richiamo del metodo step1 con idContratto: " + id);
+                        System.out.println("main : Richiamo del metodo step1 con idContratto: " + id + "START");
                         checkService.step1(id, String.valueOf(id));
                     }
+                    long endTime = System.nanoTime();
+                    long durataInMillisecondi = (endTime - startTime) / 1_000_000_000;
+                    System.out.println("Tempo di esecuzione: " + durataInMillisecondi + " ms");
                 }
             }
 

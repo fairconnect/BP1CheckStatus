@@ -56,42 +56,41 @@ public class CheckService {
     }
 
     public void step1(int idContratto, String datoIniziale) {
-        System.out.println("INIZIO step1:" + idContratto);
+        //System.out.println("INIZIO step1:" + idContratto);
 
         StatoContratto statoContratto = new StatoContratto(new Mov(0,0,0,0,"","","","","","","",null,null,null,null, ""), EnumStatoContratto.AMBIGUO,null, -1, -1,0, 0, 0, 0,"",null);
 
         List<String> compMov = contrattoDAO.findCompagnieByIdContratto(idContratto);
         if (compMov.size() > 1) {
             statoContratto.setAnomaliaContratto(EnumContratto.CROSSCOMPAGNIA);
-        } else if (compMov.size() == 1) {
-            String compagnia = compMov.get(0);
-            if ("MES".equalsIgnoreCase(compagnia) || "CDS".equalsIgnoreCase(compagnia)) {
-                statoContratto = checkStatoContratto(idContratto);
-            } else if ("057".equalsIgnoreCase(compagnia) || "057G".equalsIgnoreCase(compagnia) || "057J".equalsIgnoreCase(compagnia) || "247".equalsIgnoreCase(compagnia)
-                        || "429".equalsIgnoreCase(compagnia) || "429J".equalsIgnoreCase(compagnia) || "014".equalsIgnoreCase(compagnia)) {
-                    statoContratto = contrattiJeniot(idContratto);
-            } else if ("440".equalsIgnoreCase(compagnia)) {
-                statoContratto = contrattiQuixa(idContratto);
-            } else {
-                statoContratto.setAnomaliaContratto(EnumContratto.COMPAGNIANONGESTITA);
-            }
         }
-        System.out.println("FINE step1:" + idContratto);
+        String compagnia = (compMov != null && !compMov.isEmpty() && compMov.get(0) != null) ? compMov.get(0) : "";
+        if ("MES".equalsIgnoreCase(compagnia) || "CDS".equalsIgnoreCase(compagnia)) {
+            statoContratto = checkStatoContratto(idContratto);
+        } else if ("057".equalsIgnoreCase(compagnia) || "057G".equalsIgnoreCase(compagnia) || "057J".equalsIgnoreCase(compagnia) || "247".equalsIgnoreCase(compagnia)
+                    || "429".equalsIgnoreCase(compagnia) || "429J".equalsIgnoreCase(compagnia) || "014".equalsIgnoreCase(compagnia)) {
+                statoContratto = contrattiJeniot(idContratto);
+        } else if ("440".equalsIgnoreCase(compagnia)) {
+            statoContratto = contrattiQuixa(idContratto);
+        } else {
+            statoContratto.setAnomaliaContratto(EnumContratto.COMPAGNIANONGESTITA);
+        }
+        //System.out.println("FINE step1:" + idContratto);
         step2(statoContratto, datoIniziale);
     }
 
     public void step2(StatoContratto statoContratto, String datoIniziale) {
-        System.out.println("INIZIO step2");
+        //System.out.println("INIZIO step2");
 
         StatoPeriferica statoPeriferica = checkStatoPeriferica(statoContratto.getIdContratto());
 
-        System.out.println("FINE step2");
+        //System.out.println("FINE step2");
 
         step3(statoContratto, statoPeriferica, datoIniziale);
     }
 
     public void step3(StatoContratto statoContratto, StatoPeriferica statoPeriferica, String datoIniziale) {
-        System.out.println("INIZIO step3");
+        //System.out.println("INIZIO step3");
         ///Recupero i valori dalla tabella contratti e statopolizze
         statoContratto.setContrattiStato(contrattoDAO.findStatoContrattoById(statoContratto.getIdContratto()));
         statoContratto.setStatoPolizzeStato(contrattoDAO.findStatoPolizzeByIdContratto(statoContratto.getIdContratto()));
@@ -130,12 +129,12 @@ public class CheckService {
                 azionePeriferica = "Da attivare";
             }
         }
-        System.out.println("Fine step3");
+        //System.out.println("Fine step3");
         step4(statoContratto, statoPeriferica, aggContratto, aggPeriferica, azionePeriferica, rawData, posizionePeriferica, datoIniziale);
     }
 
     public void step4(StatoContratto statoContratto, StatoPeriferica statoPeriferica, boolean aggContratto, boolean aggPeriferica,String azionePeriferica,TrasmissioneDati rawData,String posizionePeriferica, String datoIniziale) {
-        System.out.println("INIZIO step4");
+        //System.out.println("INIZIO step4");
 
         Sim sim = checkSim(statoPeriferica.getIdPeriferica());
         String statoAtteso = "";
@@ -181,7 +180,7 @@ public class CheckService {
         }
         sim.setStatoAtteso(statoAtteso);
         //simDAO.insertSimLog(statoContratto, statoPeriferica, sim, aggiornatoContratto, aggiornatoPeriferica);
-        System.out.println("FINE step4");
+        //System.out.println("FINE step4");
         insertLogCSV(statoContratto,statoPeriferica ,sim ,aggContratto, aggPeriferica, azionePeriferica,rawData ,posizionePeriferica, datoIniziale);
     }
 
@@ -240,10 +239,16 @@ public class CheckService {
         } else {
             ///Prendo l'ultimo mov per il contratto
             statoContratto = new StatoContratto(movList.get(0), EnumStatoContratto.AMBIGUO, null, -1, -1,0,0,0,0,"",null);
+            int emissioni = 0;
+            Mov ultimoMovZero = null;
 
             for (Mov contratto : movList) {
                 if (contratto.getIdUnicoMov() > statoContratto.getIdUnicoMov()) {
                     statoContratto = new StatoContratto(contratto, EnumStatoContratto.AMBIGUO, EnumContratto.IDULTIMOMOVERRATO, -1, -1,0,0,0,0,"",null);
+                }
+                if ("0".equals(statoContratto.getTipoMovimento())) {
+                    emissioni++;
+                    ultimoMovZero = contratto;
                 }
             }
             boolean scarti = contrattoDAO.findScartiGenerali(statoContratto.getTarga());
@@ -252,20 +257,29 @@ public class CheckService {
                 statoContratto = new StatoContratto(movList.get(0), EnumStatoContratto.AMBIGUO, EnumContratto.SCARTIDARECUPERARE, -1, -1,0,0,0,0,"",null);
             }
                 if ("0".equals(statoContratto.getTipoMovimento()) || "18".equals(statoContratto.getTipoMovimento()) || "14".equals(statoContratto.getTipoMovimento()) || "6".equals(statoContratto.getTipoMovimento()) || "9".equals(statoContratto.getTipoMovimento()) || "13".equals(statoContratto.getTipoMovimento())) {
-                    if (!oggi.isBefore(statoContratto.getDataInizioServizio()) && !oggi.isAfter(statoContratto.getDataFineServizio())) {
+                    if (!oggi.isBefore(statoContratto.getDataInizioServizio()) && !oggi.isAfter(statoContratto.getDataFineServizio().plusDays(90))) {
                         statoContratto.setStatoContratto(EnumStatoContratto.ATTIVO);
                     } else {
                         statoContratto.setStatoContratto(EnumStatoContratto.SCADUTO);
                     }
                 } else if ("11".equals(statoContratto.getTipoMovimento()) || "2".equals(statoContratto.getTipoMovimento()) || "4".equals(statoContratto.getTipoMovimento()) || "7".equals(statoContratto.getTipoMovimento()) || "10".equals(statoContratto.getTipoMovimento())) {
-                    if (!oggi.isBefore(statoContratto.getDataDecorrenza())) {
-                        statoContratto.setStatoContratto(EnumStatoContratto.STORNATO);
+                    if (emissioni <= 1) {
+                        if (!oggi.isBefore(statoContratto.getDataDecorrenza())) {
+                            statoContratto.setStatoContratto(EnumStatoContratto.STORNATO);
+                        } else {
+                            statoContratto.setStatoContratto(EnumStatoContratto.ATTIVO);
+                            statoContratto.setAnomaliaContratto(EnumContratto.DASTORNARE);
+                        }
                     } else {
-                        statoContratto.setStatoContratto(EnumStatoContratto.ATTIVO);
-                        statoContratto.setAnomaliaContratto(EnumContratto.DASTORNARE);
+                        if (!oggi.isBefore(ultimoMovZero.getDataInizioServizio()) && !oggi.isAfter(ultimoMovZero.getDataFineServizio().plusDays(90))) {
+                            statoContratto.setStatoContratto(EnumStatoContratto.ATTIVO);
+                        } else {
+                            statoContratto.setStatoContratto(EnumStatoContratto.SCADUTO);
+                        }
+                        statoContratto.setAnomaliaContratto(EnumContratto.CASE0011);
                     }
                 } else if ("8".equals(statoContratto.getTipoMovimento()) || "17".equals(statoContratto.getTipoMovimento()) || "19".equals(statoContratto.getTipoMovimento()) || "20".equals(statoContratto.getTipoMovimento())) {
-                    if (!oggi.isBefore(statoContratto.getDataDecorrenza())) {
+                    if (!oggi.isBefore(statoContratto.getDataDecorrenza().plusDays(90))) {
                         statoContratto.setStatoContratto(EnumStatoContratto.SCADUTO);
                     } else {
                         statoContratto.setStatoContratto(EnumStatoContratto.ATTIVO);
@@ -273,22 +287,26 @@ public class CheckService {
                     }
                 } else if ("5".equals(statoContratto.getTipoMovimento())) {
                     if (!oggi.isBefore(statoContratto.getDataInizioServizio()) && !oggi.isAfter(statoContratto.getDataFineServizio())) {
-                        statoContratto.setStatoContratto(EnumStatoContratto.SOSPESO);
+                        if (!oggi.isBefore(statoContratto.getDataInizioServizio()) && !oggi.isAfter(statoContratto.getDataFineServizio().plusDays(365))) {
+                            statoContratto.setStatoContratto(EnumStatoContratto.SCADUTO);
+                        } else {
+                            statoContratto.setStatoContratto(EnumStatoContratto.SOSPESO);
+                        }
                     }
                 } else if ("1".equals(statoContratto.getTipoMovimento()) || "3".equals(statoContratto.getTipoMovimento()) || "21".equals(statoContratto.getTipoMovimento())) {
-                    if (!oggi.isBefore(statoContratto.getDataInizioServizio()) && !oggi.isAfter(statoContratto.getDataFineServizio())) {
+                    if (!oggi.isBefore(statoContratto.getDataInizioServizio()) && !oggi.isAfter(statoContratto.getDataFineServizio().plusDays(90))) {
                         statoContratto.setStatoContratto(EnumStatoContratto.ATTIVO);
                     } else {
                         statoContratto.setStatoContratto(EnumStatoContratto.SCADUTO);
                     }
                 } else if ("31".equals(statoContratto.getTipoMovimento()) || "33".equals(statoContratto.getTipoMovimento()) || "41".equals(statoContratto.getTipoMovimento()) || "43".equals(statoContratto.getTipoMovimento())) {
-                    if (!oggi.isBefore(statoContratto.getDataInizioServizio()) && !oggi.isAfter(statoContratto.getDataFineServizio())) {
+                    if (!oggi.isBefore(statoContratto.getDataInizioServizio()) && !oggi.isAfter(statoContratto.getDataFineServizio().plusDays(90))) {
                         statoContratto.setStatoContratto(EnumStatoContratto.ATTIVO);
                     } else {
                         statoContratto.setStatoContratto(EnumStatoContratto.SCADUTO);
                     }
                 } else {
-                    if (!oggi.isBefore(statoContratto.getDataInizioServizio()) && !oggi.isAfter(statoContratto.getDataFineServizio())) {
+                    if (!oggi.isBefore(statoContratto.getDataInizioServizio()) && !oggi.isAfter(statoContratto.getDataFineServizio().plusDays(90))) {
                         statoContratto.setStatoContratto(EnumStatoContratto.ATTIVO);
                     } else {
                         statoContratto.setStatoContratto(EnumStatoContratto.SCADUTO);
@@ -343,9 +361,16 @@ public class CheckService {
 
 
         /// Recupero interventi in corso legati al contratto da modificare, prendere l'intera lista di interventi legati al contratto verificare ogni operazione
-        statoContratto.setInterventiInstallazioneInCorso(contrattoDAO.findInterventiGenerali(idContratto, "installazioni"));
+        /*statoContratto.setInterventiInstallazioneInCorso(contrattoDAO.findInterventiGenerali(idContratto, "installazioni"));
         statoContratto.setInterventiInstallazioneInCorso(contrattoDAO.findInterventiGenerali(idContratto, "disinstallazioni"));
-        statoContratto.setInterventiInstallazioneInCorso(contrattoDAO.findInterventiGenerali(idContratto, "altro"));
+        statoContratto.setInterventiInstallazioneInCorso(contrattoDAO.findInterventiGenerali(idContratto, "altro"));*/
+
+
+        //Verificare lista interventi eseguiti
+        List<Intervento> interventi = contrattoDAO.findInterventiGenerali(idContratto);
+
+
+
         //Verificare ultimo intervento
         Intervento intervento = contrattoDAO.findUltimoIntervento(idContratto);
         if (intervento != null) {
@@ -377,7 +402,7 @@ public class CheckService {
                     || "RENEWAL".equalsIgnoreCase(tipoMovimento)
                     || "RECT".equalsIgnoreCase(tipoMovimento)) {
                 if (!oggi.isBefore(statoContratto.getDataInizioServizio())
-                        && !oggi.isAfter(statoContratto.getDataFineServizio())) {
+                        && !oggi.isAfter(statoContratto.getDataFineServizio().plusDays(90))) {
                     statoContratto.setStatoContratto(EnumStatoContratto.ATTIVO);
                 } else {
                     statoContratto.setStatoContratto(EnumStatoContratto.SCADUTO);
@@ -398,7 +423,7 @@ public class CheckService {
                 }
             } else if ("SUBVE".equalsIgnoreCase(tipoMovimento)) {
                 if (!oggi.isBefore(statoContratto.getDataInizioServizio())
-                        && !oggi.isAfter(statoContratto.getDataFineServizio())) {
+                        && !oggi.isAfter(statoContratto.getDataFineServizio().plusDays(90))) {
                     statoContratto.setStatoContratto(EnumStatoContratto.ATTIVO);
                 } else {
                     statoContratto.setStatoContratto(EnumStatoContratto.SCADUTO);
@@ -473,7 +498,7 @@ public class CheckService {
                         }
                     }
                     if (countStateA2 == 1) {
-                        statoPeriferica.setAnomaliPeriferica(EnumPeriferica.PERIFERICASUDIVERSOCONTRATTO);
+                        statoPeriferica.setAnomaliPeriferica(EnumPeriferica.NONDISPONIBILE);
                     } else if (countStateA2 > 1) {
                         statoPeriferica.setAnomaliPeriferica(EnumPeriferica.DOPPIAA);
                     } else {
@@ -495,7 +520,7 @@ public class CheckService {
                                 statoPeriferica.setStatoPeriferica(EnumStatoPeriferica.AMBIGUA);
                             }
                         } else {
-                            statoPeriferica.setAnomaliPeriferica(EnumPeriferica.PERIFERICASUDIVERSOCONTRATTO);
+                            statoPeriferica.setAnomaliPeriferica(EnumPeriferica.NONDISPONIBILE);
                         }
                     }
                 }
@@ -559,7 +584,13 @@ public class CheckService {
             if (dataInizio != null && dataFine != null) { anniTrascorsi = Period.between(dataInizio, dataFine).getYears(); }
             sb.append(anniTrascorsi).append(";");
             sb.append(String.valueOf(contratto.getStatoContratto())).append(";");
-            sb.append(contratto.getAnomaliaContratto() != null ? contratto.getAnomaliaContratto() : "").append(";");
+            if ("SCADUTO" == contratto.getStatoContratto().toString()) {
+                int giorniTrascorsi = 0;
+                LocalDate dataOggi = LocalDate.now();
+                if (dataFine != null) { giorniTrascorsi = Period.between(dataFine, dataOggi).getDays(); }
+            } else {
+                sb.append(contratto.getAnomaliaContratto() != null ? contratto.getAnomaliaContratto() : "").append(";");
+            }
             sb.append(contratto.getInvioI()).append(";");
             sb.append(contratto.getInterventiInstallazioneInCorso()).append(";");
             sb.append(contratto.getInterventiDisinstallazioneInCorso()).append(";");
@@ -610,7 +641,7 @@ public class CheckService {
             writer.write(sb.toString());
             writer.newLine();
             writer.flush();
-            System.out.println("Dati inseriti correttamente su out_log.");
+            //System.out.println("Dati inseriti correttamente su out_log.");
         } catch (IOException e) {
             System.err.println("Errore durante la scrittura su out_log: " + e.getMessage());
         }
@@ -695,6 +726,18 @@ public class CheckService {
                 return "Cambio device";
             case "47":
                 return "Proroga per installazione";
+            case "REPLACE":
+                return "Cambio veicolo";
+            case "RECT":
+                return "Aggiornamento dati";
+            case "NEW":
+                return "Emissione";
+            case "CLOSURE":
+                return "Storno";
+            case "RENEWAL":
+                return "Rinnovo";
+            case "SUBVE":
+                return "Cambio veicolo";
             default:
                 return tipoMovimento;
         }

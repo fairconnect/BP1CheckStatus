@@ -16,6 +16,7 @@ public final class EnumTypes {
         CROSSCOMPAGNIA,
         SCARTIDARECUPERARE,
         NESSUNCONTRATTO,
+        CASE0011,
         COMPAGNIANONGESTITA
 
     }
@@ -31,7 +32,7 @@ public final class EnumTypes {
     }
 
     public enum EnumPeriferica {
-        PERIFERICASUDIVERSOCONTRATTO,
+        NONDISPONIBILE,
         NESSUNAPERIFERICA,
         SANAREEXT,
         DOPPIAA,

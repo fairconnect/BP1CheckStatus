@@ -14,7 +14,7 @@ public class ContrattoDAO {
     public List<String> findCompagnieByIdContratto(int idContratto) {
         List<String> compagnieList = new ArrayList<>();
 
-        String query = "select codCompagnia from tracciati where numVoucher = ?";
+        String query = "select codCompagnia from tracciati where numVoucher = ? order by dataArrivo desc";
 
         try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -134,16 +134,9 @@ public class ContrattoDAO {
         return true;
     }
 
-    public int findInterventiGenerali(int idContratto, String tipoIntervento) {
-            int interventi = 0;
-            String query = "";
-            if (tipoIntervento.equals("installazioni")) {
-                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state not in (3,4,6,7,12) and top.tipoOperazione in (1, 3, 9,14,19, 20)";
-            } else if (tipoIntervento.equals("disinstallazioni")) {
-                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state not in (3,4,6,7,12) and top.tipoOperazione in (2,4,12,15,21)";
-            } else {
-                query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state not in (3,4,6,7,12) and top.tipoOperazione in (5,6,7,8,10,11,13,16,17,18)";
-            }
+    public List<Intervento> findInterventiGenerali(int idContratto) {
+            List<Intervento> interventi = 0;
+            String query = "SELECT count(*) as numeroInterventi from operations o join stato_operations so on so.idoperation=o.idOperation and so.lastRecord=1 join tipo_operations top on top.tipoOperazione=o.tipoOperazione join tipo_stato_operations tso on tso.idtipoStatoOperation=so.stato where o.idContratto = ? and tso.category_state not in (3,4,6,7,12) and top.tipoOperazione in (5,6,7,8,10,11,13,16,17,18)";
 
             try (Connection connection = DBManager.getConnectionReplica();
                  PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -152,7 +145,7 @@ public class ContrattoDAO {
 
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
                     if (resultSet.next()) {
-                        interventi = resultSet.getInt("numeroInterventi");
+                        //interventi = resultSet.getInt("numeroInterventi");
                     }
                 }
             } catch (Exception e) {
@@ -188,7 +181,7 @@ public class ContrattoDAO {
 
     public List<Mov> findMovQuixaIdContratto(int idContratto) {
         List<Mov> movList = new ArrayList<>();
-        String query = "SELECT t.idTracciato, t.numVoucher, tq.codiceMovimento,t.codStato, t.codCompagnia, t.numPolizza, t.targa, t.vat, t.dataDecorrenza, t.dataInizioServ, t.dataFineServ from tracciati_quixa tq join tracciati t on t.idTracciato = tq.idTracciato WHERE t.numVoucher = ? order by t.dataArrivo desc";
+        String query = "SELECT t.idTracciato, t.numVoucher as ctr, tq.numvoucher, tq.codiceMovimento,t.codStato, t.codCompagnia, t.numPolizza, t.targa, t.vat, t.dataDecorrenza, t.dataInizioServ, t.dataFineServ from tracciati_quixa tq join tracciati t on t.idTracciato = tq.idTracciato WHERE t.numVoucher = ? order by t.dataArrivo desc";
 
         try (Connection connection = DBManager.getConnectionReplica();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -210,7 +203,8 @@ public class ContrattoDAO {
 
     private Mov mapToMovQuixa(ResultSet resultSet) throws SQLException {
         int idTracciato = resultSet.getInt("idTracciato");
-        int idContratto = resultSet.getInt("numVoucher");
+        int idContratto = resultSet.getInt("ctr");
+        int numVoucher = resultSet.getInt("numvoucher");
         String codiceMovimento = resultSet.getString("codiceMovimento");
         String codStato = resultSet.getString("codStato");
         String codCompagnia = resultSet.getString("codCompagnia");
@@ -236,7 +230,7 @@ public class ContrattoDAO {
             dataFineServizio = dbDate.toLocalDate();
         }
         return new Mov(
-                0, idTracciato, idContratto, 0, codStato, codiceMovimento, codCompagnia, numPolizza,"", targa,  vat, dataDecorrenza, dataInizioServizio, dataFineServizio,null,"");
+                numVoucher, idTracciato, idContratto, 0, codStato, codiceMovimento, codCompagnia, numPolizza,"", targa,  vat, dataDecorrenza, dataInizioServizio, dataFineServizio,null,"");
     }
 
     private Mov mapToMov(ResultSet resultSet) throws SQLException {
@@ -539,7 +533,7 @@ public class ContrattoDAO {
                 "  ELSE 'registri e rawdata disallineati' " +
                 "END AS stato_allineamento " +
                 "FROM tbl_enrich_registry ter " +
-                "JOIN raw_data_generali r ON ter.voucherId = r.numVoucher " +
+                "LEFT JOIN raw_data_generali r ON ter.voucherId = r.numVoucher " +
                 "WHERE ter.voucherId = ?";
 
         try (Connection conn = DBManager.getConnectionReplica();

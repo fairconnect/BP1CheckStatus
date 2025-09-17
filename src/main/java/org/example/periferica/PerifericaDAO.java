@@ -263,7 +263,7 @@ public class PerifericaDAO {
         String sql = "SELECT valore, trovato FROM ( " +
                 "SELECT idCliente AS valore, 'Dal Cliente' AS trovato FROM contratti WHERE idCliente = ? " +
                 "UNION ALL " +
-                "SELECT idUser AS valore, 'Dal Dealer' AS trovato FROM co_gl_anagrafica_mag WHERE idUser = ? " +
+                "SELECT userIdStringKey AS valore, 'Dal Dealer' AS trovato FROM anagrafica_and_roles WHERE userIdStringKey = ? " +
                 ") AS unione " +
                 "LIMIT 1";
         try (Connection connection = DBManager.getConnectionReplica();
